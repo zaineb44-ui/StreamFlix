@@ -445,6 +445,33 @@
 </head>
 <body>
     <header>
+        <!-- Welcome Popup -->
+<div id="welcome-popup" style="
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    color: black;
+    padding: 20px 30px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    z-index: 9999;
+    border-radius: 10px;
+    text-align: center;
+    display: none;
+">
+    <h2 style="margin-bottom: 10px;">Welcome to this site</h2>
+    <p style="font-size: 12px; color: gray;">made by ARCHAN Ayoub</p>
+<button onclick="closeWelcomePopup()" style="
+    margin-top: 15px;
+    padding: 5px 15px;
+    background: #01b4e4;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+">OK</button>
+</div>
         <a href="index.html" class="logo">
             <i class="fas fa-film"></i>
             <span>StreamFlix</span>
@@ -1178,5 +1205,21 @@
         updateDateTime();
         setInterval(updateDateTime, 1000); // Update every second
     </script>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        const popupSeen = localStorage.getItem('welcomePopupSeen');
+        if (!popupSeen) {
+            document.getElementById('welcome-popup').style.display = 'block';
+        }
+    });
+
+    function closeWelcomePopup() {
+        document.getElementById('welcome-popup').style.display = 'none';
+        localStorage.setItem('welcomePopupSeen', 'true');
+    }
+</script>
+
+
 </body>
 </html>

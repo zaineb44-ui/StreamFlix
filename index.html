@@ -1672,5 +1672,119 @@
         updateDateTime();
         setInterval(updateDateTime, 1000); // Update every second
     </script>
+
+
+<script>
+const BACKEND_URL = '.';
+let currentUserId = null;
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+
+  const res = await fetch(`${BACKEND_URL}/login.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    currentUserId = data.user.id;
+    document.getElementById('auth-section').style.display = 'none';
+    document.getElementById('user-dashboard').style.display = 'block';
+    document.getElementById('welcome-message').textContent = `Welcome, ${data.user.name}`;
+  } else {
+    alert(data.message);
+  }
+}
+
+async function handleRegister() {
+  const name = document.getElementById('register-name').value;
+  const email = document.getElementById('register-email').value;
+  const password = document.getElementById('register-password').value;
+
+  const res = await fetch(`${BACKEND_URL}/register.php`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password })
+  });
+
+  const data = await res.json();
+  alert(data.message);
+}
+
+async function loadUserData() {
+  if (!currentUserId) {
+    alert('Please log in first.');
+    return;
+  }
+
+  try {
+    const watchlistRes = await fetch(`${BACKEND_URL}/user_data.php?action=get_watchlist&user_id=${currentUserId}`);
+    const historyRes = await fetch(`${BACKEND_URL}/user_data.php?action=get_history&user_id=${currentUserId}`);
+
+    const watchlist = await watchlistRes.json();
+    const history = await historyRes.json();
+
+    displayList('watchlist', watchlist.watchlist);
+    displayList('history', history.history);
+  } catch (err) {
+    console.error('Error fetching user data:', err);
+    alert('Failed to load user data.');
+  }
+}
+
+function displayList(elementId, items) {
+  const ul = document.getElementById(elementId);
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!items || items.length === 0) {
+    ul.innerHTML = '<li>No data available.</li>';
+    return;
+  }
+  items.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = `${item.media_type.toUpperCase()} - ID: ${item.media_id}`;
+    if (item.season) li.textContent += ` | Season: ${item.season}`;
+    if (item.episode) li.textContent += ` | Episode: ${item.episode}`;
+    ul.appendChild(li);
+  });
+}
+
+// TMDB content
+const tmdbApiKey = 'YOUR_TMDB_API_KEY'; // Replace with your API key
+const tmdbContainer = document.getElementById('tmdb-content');
+
+async function loadTMDBContent() {
+  try {
+    const res = await fetch(`https://api.themoviedb.org/3/trending/movie/day?api_key=${tmdbApiKey}`);
+    const data = await res.json();
+    if (data.results) {
+      displayTMDB(data.results);
+    }
+  } catch (err) {
+    console.error('Error loading TMDB data:', err);
+  }
+}
+
+function displayTMDB(movies) {
+  if (!tmdbContainer) return;
+  tmdbContainer.innerHTML = '';
+  movies.forEach(movie => {
+    const div = document.createElement('div');
+    div.className = 'movie-card';
+    div.innerHTML = `
+      <img src="https://image.tmdb.org/t/p/w200${movie.poster_path}" alt="${movie.title}" />
+      <h4>${movie.title}</h4>
+    `;
+    tmdbContainer.appendChild(div);
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadTMDBContent();
+});
+</script>
 </body>
 </html>

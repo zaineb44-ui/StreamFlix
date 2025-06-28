@@ -1175,6 +1175,20 @@ fetch(`${API_URL}/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         }
     </script>
+<footer style="background-color: #f5f5f5; padding: 20px; text-align: center; font-family: Arial, sans-serif; border-top: 1px solid #ddd;">
+<div style="margin-bottom: 10px;">
+<strong>© Important Notice</strong>
+</div>
+<div style="margin-bottom: 15px; color: #555; font-size: 14px;">
+            StreamFlix does not host or store any media files. All content is sourced from third-party services and platforms. 
+            We respect intellectual property rights and comply with DMCA regulations.
+        </div>
+<div style="font-size: 12px; color: #777;">
+            © <span id="current-year"></span> StreamFlix. All rights reserved. | 
+            Made with ❤️ for movie lovers | Version 1.0 @ | ARCHAN Ayoub
+        </div>
+<div id="datetime" style="font-size: 12px; color: #777; margin-top: 5px;"></div>
+</footer>
 <script>
         // Dynamic Year
         document.getElementById('current-year').textContent = new Date().getFullYear();
@@ -1248,168 +1262,6 @@ fetch(`${API_URL}/tv/${tvId}/season/${seasonNumber}/episode/${episodeNumber}?api
             }
         }
     }, 1000);
-</script>
-<iframe height="500" id="playerFrame" style="border:none; display:block; margin:0 auto;" width="100%"></iframe>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const videoItems = document.querySelectorAll(".video-item");
-    videoItems.forEach(item => {
-        item.addEventListener("click", () => {
-            const tmdbId = item.getAttribute("data-id");
-            const type = item.getAttribute("data-type");
-            const season = item.getAttribute("data-season") || 1;
-            const episode = item.getAttribute("data-episode") || 1;
-            // loadVideo(tmdbId, type, season, episode);
-        });
-    });
-});
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const videoItems = document.querySelectorAll(".video-item");
-
-    function slugify(text) {
-        return text.toString().toLowerCase()
-            .replace(/\s+/g, '-')           // Replace spaces with -
-            .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-            .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-            .replace(/^-+/, '')             // Trim - from start of text
-            .replace(/-+$/, '');            // Trim - from end of text
-    }
-
-    videoItems.forEach(item => {
-        item.addEventListener("click", () => {
-            const name = item.textContent.trim();
-            const slug = slugify(name);
-            const currentUrl = window.location.href.split('?')[0];
-            const newUrl = `${currentUrl}?title=${slug}`;
-            window.history.pushState({}, '', newUrl);
-        });
-    });
-});
-</script>
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const videoItems = document.querySelectorAll(".video-item");
-    const playerFrame = document.getElementById("playerFrame");
-
-    videoItems.forEach(item => {
-        item.addEventListener("click", () => {
-            const id = item.getAttribute("data-id");
-            const type = item.getAttribute("data-type");
-            const season = item.getAttribute("data-season") || 1;
-            const episode = item.getAttribute("data-episode") || 1;
-
-            const playerUrl = type === "movie"
-                ? `https://vidfast.pro/movie/${id}?autoPlay=true`
-                : `https://vidfast.pro/tv/${id}/${season}/${episode}?autoPlay=true`;
-
-            playerFrame.src = playerUrl;
-window.scrollTo({ top: playerFrame.offsetTop - 100, behavior: 'smooth' });
-
-            // Update URL slug
-            const name = item.textContent.trim();
-            const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
-            const currentUrl = window.location.href.split('?')[0];
-            window.history.pushState({}, '', `${currentUrl}?title=${slug}`);
-        });
-    });
-});
-</script>
-<footer style="background-color: #f5f5f5; padding: 20px; text-align: center; font-family: Arial, sans-serif; border-top: 1px solid #ddd;">
-<div style="margin-bottom: 10px;">
-<strong>© Important Notice</strong>
-</div>
-<div style="margin-bottom: 15px; color: #555; font-size: 14px;">
-            StreamFlix does not host or store any media files. All content is sourced from third-party services and platforms. 
-            We respect intellectual property rights and comply with DMCA regulations.
-        </div>
-<div style="font-size: 12px; color: #777;">
-            © <span id="current-year"></span> StreamFlix. All rights reserved. | 
-            Made with ❤️ for movie lovers | Version 1.0 @ | ARCHAN Ayoub
-        </div>
-<div id="datetime" style="font-size: 12px; color: #777; margin-top: 5px;"></div>
-</footer><script>
-function fetchMoreSections() {
-    const moreMovieEndpoints = [
-        { title: 'Top Rated Movies', endpoint: '/movie/top_rated' },
-        { title: 'Upcoming Movies', endpoint: '/movie/upcoming' },
-        { title: 'Now Playing Movies', endpoint: '/movie/now_playing' }
-    ];
-
-    const moreTVEndpoints = [
-        { title: 'Top Rated TV Shows', endpoint: '/tv/top_rated' },
-        { title: 'Currently Airing TV Shows', endpoint: '/tv/on_the_air' },
-        { title: 'Airing Today', endpoint: '/tv/airing_today' }
-    ];
-
-    const container = document.querySelector('.main-content');
-
-    moreMovieEndpoints.forEach(({ title, endpoint }) => {
-        const section = document.createElement('section');
-        section.innerHTML = `<h2>${title}</h2><div class="media-grid" id="${title.toLowerCase().replace(/ /g, '-')}-grid"></div>`;
-        container.appendChild(section);
-        fetch(`${API_URL}${endpoint}?api_key=${API_KEY}`)
-            .then(res => res.json())
-            .then(data => {
-                const grid = document.getElementById(`${title.toLowerCase().replace(/ /g, '-')}-grid`);
-                data.results.forEach(movie => createMediaCard(movie, grid, 'movie'));
-            });
-    });
-
-    moreTVEndpoints.forEach(({ title, endpoint }) => {
-        const section = document.createElement('section');
-        section.innerHTML = `<h2>${title}</h2><div class="media-grid" id="${title.toLowerCase().replace(/ /g, '-')}-grid"></div>`;
-        container.appendChild(section);
-        fetch(`${API_URL}${endpoint}?api_key=${API_KEY}`)
-            .then(res => res.json())
-            .then(data => {
-                const grid = document.getElementById(`${title.toLowerCase().replace(/ /g, '-')}-grid`);
-                data.results.forEach(show => createMediaCard(show, grid, 'tv'));
-            });
-    });
-}
-document.addEventListener('DOMContentLoaded', fetchMoreSections);
-</script>
-<button id="scrollToPlayerBtn" title="Scroll Up to Player">⬆️ Scroll Up to Player</button>
-<style>
-#scrollToPlayerBtn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 99;
-  background-color: #01b4e4;
-  color: white;
-  border: none;
-  outline: none;
-  padding: 12px 18px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-}
-#scrollToPlayerBtn:hover {
-  background-color: #028bb3;
-}
-</style>
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const scrollBtn = document.getElementById("scrollToPlayerBtn");
-  scrollBtn.addEventListener("click", () => {
-    const player = document.getElementById("playerFrame");
-    if (player) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  });
-});
-</script>
-
-<script>
-window.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-        alert("📢 When you choose a movie or series, click on the 'Scroll Up to Player' button.");
-    }, 1000);
-});
 </script>
 </body>
 </html>

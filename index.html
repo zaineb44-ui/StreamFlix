@@ -443,7 +443,7 @@
 </head>
 <body>
     <header>
-        <a href="index.html" class="logo">
+        <a href="#" class="logo">
             <i class="fas fa-film"></i>
             <span>StreamFlix</span>
         </a>
@@ -556,7 +556,7 @@
         let currentEpisodes = [];
         let mediaCache = {};
         let watchlist = JSON.parse(localStorage.getItem('watchlist')) || [];
-        let currentActiveTab = 'movies'; // Track the currently active tab
+        let currentActiveTab = 'movies';
 
         // Initialize the app
         document.addEventListener('DOMContentLoaded', () => {
@@ -565,7 +565,6 @@
             setupEventListeners();
             displayWatchlist();
             
-            // Initialize history if the tab is active
             if (document.querySelector('.tab-button[data-tab="history"]').classList.contains('active')) {
                 displayWatchHistory();
             }
@@ -707,7 +706,7 @@
             card.className = 'media-card';
             card.dataset.id = item.id;
             
-            // Cache media data for history and watchlist
+            // Cache media data
             mediaCache[item.id] = {
                 poster_path: item.poster_path,
                 title: type === 'movie' ? item.title : item.name,
@@ -724,10 +723,12 @@
             // Check if item is in watchlist
             const isInWatchlist = watchlist.some(w => w.id === item.id && w.type === type);
             
+            // Add watchlist button to ALL cards
             card.innerHTML = `
-                ${!isSearchResult ? `<button class="add-to-watchlist ${isInWatchlist ? 'in-watchlist' : ''}" title="${isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}">
+                <button class="add-to-watchlist ${isInWatchlist ? 'in-watchlist' : ''}" 
+                        title="${isInWatchlist ? 'Remove from watchlist' : 'Add to watchlist'}">
                     <i class="fas fa-bookmark"></i>
-                </button>` : ''}
+                </button>
                 <img src="${posterPath}" alt="${title}" class="media-poster">
                 <div class="media-info">
                     <h3 class="media-title">${title}</h3>
@@ -738,11 +739,10 @@
                 </div>
             `;
             
-            // Play on click
+            // Play on click (excluding watchlist button clicks)
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.add-to-watchlist')) return;
                 
-                // Hide current view and show player
                 document.querySelector('.tab-content.active').style.display = 'none';
                 playerContainer.style.display = 'block';
                 
@@ -754,17 +754,23 @@
                 }
             });
             
-            // Watchlist button functionality
-            if (!isSearchResult) {
-                const watchlistBtn = card.querySelector('.add-to-watchlist');
-                watchlistBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleWatchlist(item.id, type);
-                    watchlistBtn.classList.toggle('in-watchlist');
-                    watchlistBtn.title = watchlistBtn.classList.contains('in-watchlist') ? 
-                        'Remove from watchlist' : 'Add to watchlist';
-                });
-            }
+            // Watchlist button functionality for ALL cards
+            const watchlistBtn = card.querySelector('.add-to-watchlist');
+            watchlistBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleWatchlist(item.id, type);
+                
+                // Update button appearance
+                watchlistBtn.classList.toggle('in-watchlist');
+                watchlistBtn.title = watchlistBtn.classList.contains('in-watchlist') ? 
+                    'Remove from watchlist' : 'Add to watchlist';
+                
+                // If we're in the watchlist tab, remove the card if it was deleted
+                if (watchlistBtn.classList.contains('in-watchlist') === false && 
+                    document.getElementById('watchlist').classList.contains('active')) {
+                    card.remove();
+                }
+            });
             
             container.appendChild(card);
         }
@@ -786,7 +792,11 @@
             }
             
             localStorage.setItem('watchlist', JSON.stringify(watchlist));
-            displayWatchlist();
+            
+            // If we're on the watchlist tab, refresh the display
+            if (document.getElementById('watchlist').classList.contains('active')) {
+                displayWatchlist();
+            }
         }
 
         // Display watchlist

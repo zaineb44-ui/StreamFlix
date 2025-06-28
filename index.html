@@ -1221,6 +1221,23 @@
     }
 </script>
 
+<script>
+    // Disable common popup tricks
+    window.open = () => null;
+
+    // Also disable it inside the iframe by waiting a bit and sending a message (if they use window.open)
+    setInterval(() => {
+        const iframe = document.getElementById('player-iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                iframe.contentWindow.open = () => null;
+            } catch (e) {
+                // Cross-origin, can't access directly
+            }
+        }
+    }, 1000);
+</script>
+
 
 </body>
 </html>

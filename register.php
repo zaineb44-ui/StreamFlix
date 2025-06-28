@@ -2,7 +2,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 <?php
-require '../../db_connect.php';
+require 'db_connect.php';
 
 header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");

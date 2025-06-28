@@ -1,8 +1,8 @@
 <?php
-$host = 'sql300.ezyro.com';
-$db   = 'ezyro_39344556_streamflix';
-$user = 'ezyro_39344556';
-$pass = 'ac70a8c7517';  // Replace this
+$host = 'sql106.infinityfree.com';
+$db   = 'if0_39345288_streamflix';
+$user = 'if0_39345288';
+$pass = 'DMErQRYXTvRvOs';  // Replace with your actual password
 $charset = 'utf8mb4';
 
 $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

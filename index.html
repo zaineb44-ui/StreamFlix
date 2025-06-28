@@ -1238,6 +1238,36 @@
     }, 1000);
 </script>
 
+<iframe 
+    class="player-iframe" 
+    id="player-iframe" 
+    allowfullscreen 
+    sandbox="allow-same-origin allow-scripts allow-presentation">
+</iframe>
+
+<script>
+    // Disable all new tab/popups
+    window.open = function() {
+        console.log("Blocked a popup attempt.");
+        return null;
+    };
+
+    // Monitor iframe injection attempts
+    setInterval(() => {
+        const iframe = document.getElementById('player-iframe');
+        if (iframe && iframe.contentWindow) {
+            try {
+                iframe.contentWindow.open = function() {
+                    console.log("Blocked a popup attempt inside iframe.");
+                    return null;
+                };
+            } catch (e) {
+                // Can't access cross-origin iframe: ignore
+            }
+        }
+    }, 1000);
+</script>
+
 
 </body>
 </html>

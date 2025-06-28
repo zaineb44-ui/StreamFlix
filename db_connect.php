@@ -1,7 +1,7 @@
 <?php
-$host = 'sql.aooezmyro.com';
+$host = 'sql300.ezyro.com';
 $dbname = 'exyro_39244556_streamfix';
-$username = 'exyro_29244556';
+$username = 'ezyro_39344556';
 $password = 'ac70a8c7517';
 
 try {

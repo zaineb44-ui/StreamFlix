@@ -890,7 +890,8 @@
             seasonSelector.style.display = 'none';
             episodeSelector.style.display = 'none';
             
-            playerIframe.src = `${VIDFAST_URL}/movie/${movieId}?autoPlay=true&theme=01b4e4`;
+            playerIframe.src = `${VIDFAST_URL}/movie/${movieId}?autoPlay=true&theme=01b4e4&noads=true`;
+
             
             // Save to history
             saveWatchHistory(movieId, 'movie');
@@ -996,7 +997,7 @@
 
         // Play TV episode
         function playTvEpisode(tvId, seasonNumber, episodeNumber) {
-            playerIframe.src = `${VIDFAST_URL}/tv/${tvId}/${seasonNumber}/${episodeNumber}?autoPlay=true&theme=01b4e4&nextButton=true&autoNext=true`;
+            playerIframe.src = `${VIDFAST_URL}/tv/${tvId}/${seasonNumber}/${episodeNumber}?autoPlay=true&theme=01b4e4&nextButton=true&autoNext=true&noads=true`;
             
             // Save to history
             saveWatchHistory(tvId, 'tv', seasonNumber, episodeNumber);

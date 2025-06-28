@@ -1,176 +1,75 @@
 <?php
-header('Content-Type: application/json');
 require 'db_connect.php';
-session_start();
 
-$response = ['success' => false, 'message' => ''];
+header('Content-Type: application/json');
+$method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? '';
 
-if (!isset($_SESSION['user_id'])) {
-    $response['message'] = 'Not authenticated';
-    echo json_encode($response);
+// For simplicity, get user ID from query or header (use real auth in production)
+$user_id = $_GET['user_id'] ?? ($_SERVER['HTTP_USER_ID'] ?? null);
+if (!$user_id) {
+    echo json_encode(['success' => false, 'message' => 'User ID required']);
     exit;
 }
 
-$userId = $_SESSION['user_id'];
-$action = $_GET['action'] ?? $_POST['action'] ?? '';
-
-try {
-    switch ($action) {
-        case 'save_history':
-            saveWatchHistory();
-            break;
-        case 'get_history':
-            getWatchHistory();
-            break;
-        case 'toggle_watchlist':
-            toggleWatchlist();
-            break;
-        case 'get_watchlist':
-            getWatchlist();
-            break;
-        case 'delete_history_item':
-            deleteHistoryItem();
-            break;
-        case 'clear_history':
-            clearHistory();
-            break;
-        default:
-            $response['message'] = 'Invalid action';
-            echo json_encode($response);
-            exit;
+if ($action === 'get_watchlist') {
+    try {
+        $stmt = $pdo->prepare("SELECT media_id, media_type, added_at FROM watchlist WHERE user_id = ? ORDER BY added_at DESC");
+        $stmt->execute([$user_id]);
+        $watchlist = $stmt->fetchAll();
+        echo json_encode(['success' => true, 'watchlist' => $watchlist]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching watchlist']);
     }
-} catch (Exception $e) {
-    $response['message'] = $e->getMessage();
-    echo json_encode($response);
-    exit;
-}
+} elseif ($action === 'save_watchlist' && $method === 'POST') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    $watchlist = $data['watchlist'] ?? [];
 
-function saveWatchHistory() {
-    global $pdo, $userId, $response;
-    
-    $mediaId = $_POST['media_id'] ?? null;
-    $mediaType = $_POST['media_type'] ?? null;
-    $season = $_POST['season'] ?? null;
-    $episode = $_POST['episode'] ?? null;
-    $currentTime = $_POST['current_time'] ?? null;
-    $duration = $_POST['duration'] ?? null;
-    
-    if (!$mediaId || !$mediaType) {
-        throw new Exception('Missing required fields');
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM watchlist WHERE user_id = ?")->execute([$user_id]);
+        $stmt = $pdo->prepare("INSERT INTO watchlist (user_id, media_id, media_type) VALUES (?, ?, ?)");
+        foreach ($watchlist as $item) {
+            $stmt->execute([$user_id, $item['id'], $item['type']]);
+        }
+        $pdo->commit();
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Error saving watchlist']);
     }
-    
-    // Check if entry already exists
-    $stmt = $pdo->prepare("SELECT id FROM user_watch_history 
-                          WHERE user_id = ? AND media_id = ? AND media_type = ? 
-                          AND ((season_number IS NULL AND ? IS NULL) OR season_number = ?)
-                          AND ((episode_number IS NULL AND ? IS NULL) OR episode_number = ?)");
-    $stmt->execute([$userId, $mediaId, $mediaType, $season, $season, $episode, $episode]);
-    $existing = $stmt->fetch();
-    
-    if ($existing) {
-        // Update existing entry
-        $stmt = $pdo->prepare("UPDATE user_watch_history 
-                              SET current_time = ?, duration = ?, watched_at = CURRENT_TIMESTAMP
-                              WHERE id = ?");
-        $stmt->execute([$currentTime, $duration, $existing['id']]);
-    } else {
-        // Insert new entry
-        $stmt = $pdo->prepare("INSERT INTO user_watch_history 
-                              (user_id, media_id, media_type, season_number, episode_number, current_time, duration)
-                              VALUES (?, ?, ?, ?, ?, ?, ?)");
-        $stmt->execute([$userId, $mediaId, $mediaType, $season, $episode, $currentTime, $duration]);
+} elseif ($action === 'get_history') {
+    try {
+        $stmt = $pdo->prepare("SELECT media_id, media_type, season, episode, watched_at FROM watch_history WHERE user_id = ? ORDER BY watched_at DESC");
+        $stmt->execute([$user_id]);
+        $history = $stmt->fetchAll();
+        echo json_encode(['success' => true, 'history' => $history]);
+    } catch (PDOException $e) {
+        echo json_encode(['success' => false, 'message' => 'Error fetching history']);
     }
-    
-    $response['success'] = true;
-    echo json_encode($response);
-}
+} elseif ($action === 'save_history' && $method === 'POST') {
+    $data = json_decode(file_get_contents("php://input"), true);
+    $history = $data['history'] ?? [];
 
-function getWatchHistory() {
-    global $pdo, $userId, $response;
-    
-    $stmt = $pdo->prepare("SELECT * FROM user_watch_history 
-                          WHERE user_id = ? 
-                          ORDER BY watched_at DESC 
-                          LIMIT 50");
-    $stmt->execute([$userId]);
-    $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    echo json_encode($history);
-}
-
-function toggleWatchlist() {
-    global $pdo, $userId, $response;
-    
-    $mediaId = $_POST['media_id'] ?? null;
-    $mediaType = $_POST['media_type'] ?? null;
-    
-    if (!$mediaId || !$mediaType) {
-        throw new Exception('Missing required fields');
+    try {
+        $pdo->beginTransaction();
+        $pdo->prepare("DELETE FROM watch_history WHERE user_id = ?")->execute([$user_id]);
+        $stmt = $pdo->prepare("INSERT INTO watch_history (user_id, media_id, media_type, season, episode) VALUES (?, ?, ?, ?, ?)");
+        foreach ($history as $item) {
+            $stmt->execute([
+                $user_id,
+                $item['id'],
+                $item['type'],
+                $item['season'] ?? null,
+                $item['episode'] ?? null
+            ]);
+        }
+        $pdo->commit();
+        echo json_encode(['success' => true]);
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Error saving history']);
     }
-    
-    // Check if already in watchlist
-    $stmt = $pdo->prepare("SELECT id FROM user_watchlist 
-                          WHERE user_id = ? AND media_id = ? AND media_type = ?");
-    $stmt->execute([$userId, $mediaId, $mediaType]);
-    $existing = $stmt->fetch();
-    
-    if ($existing) {
-        // Remove from watchlist
-        $stmt = $pdo->prepare("DELETE FROM user_watchlist WHERE id = ?");
-        $stmt->execute([$existing['id']]);
-        $response['message'] = 'Removed from watchlist';
-    } else {
-        // Add to watchlist
-        $stmt = $pdo->prepare("INSERT INTO user_watchlist 
-                              (user_id, media_id, media_type)
-                              VALUES (?, ?, ?)");
-        $stmt->execute([$userId, $mediaId, $mediaType]);
-        $response['message'] = 'Added to watchlist';
-    }
-    
-    $response['success'] = true;
-    echo json_encode($response);
+} else {
+    echo json_encode(['success' => false, 'message' => 'Invalid request']);
 }
-
-function getWatchlist() {
-    global $pdo, $userId, $response;
-    
-    $stmt = $pdo->prepare("SELECT * FROM user_watchlist 
-                          WHERE user_id = ? 
-                          ORDER BY added_at DESC");
-    $stmt->execute([$userId]);
-    $watchlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
-    echo json_encode($watchlist);
-}
-
-function deleteHistoryItem() {
-    global $pdo, $userId, $response;
-    
-    $historyId = $_POST['history_id'] ?? null;
-    
-    if (!$historyId) {
-        throw new Exception('Missing history ID');
-    }
-    
-    $stmt = $pdo->prepare("DELETE FROM user_watch_history 
-                          WHERE id = ? AND user_id = ?");
-    $stmt->execute([$historyId, $userId]);
-    
-    $response['success'] = true;
-    $response['message'] = 'History item deleted';
-    echo json_encode($response);
-}
-
-function clearHistory() {
-    global $pdo, $userId, $response;
-    
-    $stmt = $pdo->prepare("DELETE FROM user_watch_history 
-                          WHERE user_id = ?");
-    $stmt->execute([$userId]);
-    
-    $response['success'] = true;
-    $response['message'] = 'History cleared';
-    echo json_encode($response);
-}
-?>

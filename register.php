@@ -1,37 +1,41 @@
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 <?php
-require 'db_connect.php';
-
 header('Content-Type: application/json');
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
+require 'db_connect.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
 if (!isset($data['name'], $data['email'], $data['password'])) {
-    http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Missing required fields']);
+    echo json_encode(['success' => false, 'message' => 'Missing fields']);
     exit;
 }
 
 $name = trim($data['name']);
 $email = trim($data['email']);
-$password = password_hash($data['password'], PASSWORD_BCRYPT);
+$password = $data['password'];
 
-// Check for duplicate email
-$stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-$stmt->execute([$email]);
-if ($stmt->rowCount() > 0) {
-    echo json_encode(['success' => false, 'message' => 'Email already exists']);
+// Validate email format
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(['success' => false, 'message' => 'Invalid email format']);
     exit;
 }
 
-// Insert user
-$stmt = $pdo->prepare("INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)");
-if ($stmt->execute([$name, $email, $password])) {
+$hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+
+try {
+    // Check for duplicate email
+    $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
+    $stmt->execute([$email]);
+
+    if ($stmt->fetch()) {
+        echo json_encode(['success' => false, 'message' => 'Email already registered']);
+        exit;
+    }
+
+    // Insert user
+    $stmt = $pdo->prepare("INSERT INTO users (name, email, password) VALUES (?, ?, ?)");
+    $stmt->execute([$name, $email, $hashedPassword]);
+
     echo json_encode(['success' => true, 'message' => 'Registration successful']);
-} else {
-    echo json_encode(['success' => false, 'message' => 'Database error']);
+} catch (PDOException $e) {
+    echo json_encode(['success' => false, 'message' => 'DB Error: ' . $e->getMessage()]);
 }
